@@ -3,7 +3,7 @@ Archivo de utilidades para el solver de Sudoku
 Aca deberia estar toda la logica de las funciones que se van a usar en la implementacion
 """
 
-from random import randint
+from random import randint, shuffle
 from typing import Literal
 
 # print fachero de la matriz
@@ -37,12 +37,22 @@ def print_matrix(matrix: list[list[int]]):
     # Línea inferior
     print("┗━━━┷━━━┷━━━┻━━━┷━━━┷━━━┻━━━┷━━━┷━━━┛")
 
-# Habria que definir cual es la mejor forma de popular la matriz de entrada, si con todos 1 si con nums
-# del 1 al 9 con alguna heuristica o con numeros aleatorios
+# retorna una matriz con diagonal aleatoria para generar un sudoku completo
 def populate_matrix(matrix: list[list[int]]):
-    for i in range(9):
-        for j in range(9):
-            matrix[i][j] = randint(1, 9)
+    list = [[],[],[]]
+    for i in range(3):
+        for j in range(3):
+            num = randint(1, 9)
+            while num in list[i]:
+                num = randint(1, 9)
+            list[i].append(num)
+    
+    fil_col = 0
+    for i in range(3):
+        for j in range(3):
+            matrix[fil_col][fil_col] = list[i][j]
+            fil_col += 1
+
     return matrix
 
 def populate_with_dificulty(matrix: list[list[int]], difficulty: Literal['easy', 'medium', 'hard']):
