@@ -15,7 +15,7 @@ def backtracking(S: list[list[int]], E = 0) -> list[list[int]]:
         S[row][col] = v
         if isFactible(S, v, row, col):
             resultado = backtracking(S, E + 1)
-            if resultado is not None:  # ¡VERIFICAR ÉXITO!
+            if resultado is not None:  # verifica q el resultado no sea None, si es None, no se devuelve nada
                 return resultado
         S[row][col] = 0
     return None  # Ningún valor funcionó

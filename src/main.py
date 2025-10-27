@@ -2,7 +2,15 @@ from utils.utils import print_matrix, makeDifficulty
 from utils.backtracking import iniciateBaseMatrix, backtracking
 
 def main():
-
+    print("""
+    ███████╗██╗   ██╗██████╗  ██████╗ ██╗  ██╗██╗   ██╗
+    ██╔════╝██║   ██║██╔══██╗██╔═══██╗██║ ██╔╝██║   ██║
+    ███████╗██║   ██║██║  ██║██║   ██║█████╔╝ ██║   ██║
+    ╚════██║██║   ██║██║  ██║██║   ██║██╔═██╗ ██║   ██║
+    ███████║╚██████╔╝██████╔╝╚██████╔╝██║  ██╗╚██████╔╝
+    ╚══════╝ ╚═════╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝ ╚═════╝
+    """)
+    print("Matriz inicial:")
     base_matrix = iniciateBaseMatrix()
     print_matrix(base_matrix)
     matrix = makeDifficulty(base_matrix, "easy")
