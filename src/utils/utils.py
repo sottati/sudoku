@@ -15,7 +15,8 @@ def print_matrix(matrix: list[list[int]]):
         # Imprimir fila con valores
         row_str = "┃"
         for j in range(9):
-            row_str += f"{matrix[i][j]:2d} "
+            cell_value = " ·" if matrix[i][j] == 0 else f"{matrix[i][j]:2d}"
+            row_str += f"{cell_value} "
             if j < 8:  # No es la última columna
                 if (j + 1) % 3 == 0:
                     row_str += "┃"
