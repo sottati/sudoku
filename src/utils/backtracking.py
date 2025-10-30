@@ -14,7 +14,7 @@ def backtracking(S: list[list[int]], E = 0) -> list[list[int]]:
     values = generateValues()
     for v in values:
         S[row][col] = v
-        increment()
+        increment('backtracking')
         if isFactible(S, v, row, col):
             resultado = backtracking(S, E + 1)
             if resultado is not None:  # verifica q el resultado no sea None, si es None, no se devuelve nada

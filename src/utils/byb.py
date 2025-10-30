@@ -3,8 +3,38 @@
 # dejo escrito el pseudocodigo igual q en backtracking
 
 # Algoritmo Backtracking como en la diapo
+from queue import PriorityQueue
 from typing import Set
+from utils.utils import isFactible
+from utils.counter import increment
 
+# Quiero implementar una solucion de sudoku utilizando branch and bound y tomando de heuristica para podar que siempre busque 
+# el nodo con menor cantidad de opciones disponibles. Quiero que la cota inferior sea el minimo de opciones disponibles y la
+#  cota superior sea el minimo entre: mayor cantidad de valores disponibles por nodo o por maxima cantidad de veces que aparece 
+# un valor en el tablero de los disponibles para ese nodo
+
+# Cota inferior: minimo de opciones disponibles
+# Cota superior: min(minOpcionesDisponibles, maxVecesQueApareceUnValor)
+
+# dado fila, columna y cuadrante para una celda, genera los valores posibles utilizando conjuntos
+def generatePosibleValues(S: list[list[int]], row: int, col: int) -> Set[int]:
+    # conjunto con los valores que hay en esa fila
+    v_fila: Set[int] = {S[row][col] for col in range(9) if S[row][col] != 0} 
+    # conjunto con los valores que hay en esa columna
+    v_col: Set[int] = {S[row][col] for row in range(9) if S[row][col] != 0} 
+    # conjunto con los valores que hay en ese cuadrante
+    v_cuadrante: Set[int] = {S[(row // 3) * 3 + i][(col // 3) * 3 + j] for i in range(3) for j in range(3) if S[(row // 3) * 3 + i][(col // 3) * 3 + j] != 0}
+
+    # conjunto con los valores posibles para esa celda
+    return {1, 2, 3, 4, 5, 6, 7, 8, 9} - v_fila - v_col - v_cuadrante
+
+# no se si usar este PriorityQueue o una lista de nodos, por ahora lo dejo como PriorityQueue
+def iniciarColaDePrioridad() -> PriorityQueue:
+    return PriorityQueue()
+
+# Faltan calculos de cotas
+
+# Faltan podas por heuristica
 
 def branchAndBound(S: list[list[int]], E = 0) -> list[list[int]]:
     if E == 81:
@@ -15,15 +45,11 @@ def branchAndBound(S: list[list[int]], E = 0) -> list[list[int]]:
     if S[row][col] != 0:
         return branchAndBound(S, E + 1)
 
-    valores: Set[int] = {x for x in range(1, 10)}
+    values: Set[int] = generatePosibleValues(S, row, col)
 
-    v_fila: Set[int] = {S[row][col] for col in range(9) if S[row][col] != 0}
-    v_col: Set[int] = {S[row][col] for row in range(9) if S[row][col] != 0}
-    v_cuadrante: Set[int] = set[int]()
-
-    values = generateValuesBy()
     for v in values:
         S[row][col] = v
+        increment('byb')
         if isFactible(S, v, row, col):
             resultado = branchAndBound(S, E + 1)
             if resultado is not None:  # verifica q el resultado no sea None, si es None, no se devuelve nada
@@ -44,8 +70,6 @@ def checkCuadrante(matrix: list[list[int]], v: int, row: int, col: int) -> bool:
         for j in range(3):
             cuadrante.add(matrix[cuadrante_row + i][cuadrante_col + j])
 
-    
-            
     return cuadrante
 
 # chequeo por columna
