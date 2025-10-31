@@ -1,67 +1,76 @@
-from utils.utils import print_matrix, makeDifficulty, initialize_matrix, populate_matrix
-from utils.backtracking import backtracking
+from utils.utils import print_matrix, makeDifficulty
+from utils.backtracking import iniciateBaseMatrix, backtracking
 from utils.byb import branch_and_bound
+from utils.counter import reset, get_count
+
 import time
 
+from typing import Set
+
 def main():
-    # Generar sudoku base COMPLETO
-    print("Generando sudoku base...")
-    base_matrix = initialize_matrix()
-    base_matrix = populate_matrix(base_matrix)
-    base_matrix_solved = backtracking(base_matrix)
+    print("""
+    ███████╗██╗   ██╗██████╗  ██████╗ ██╗  ██╗██╗   ██╗
+    ██╔════╝██║   ██║██╔══██╗██╔═══██╗██║ ██╔╝██║   ██║
+    ███████╗██║   ██║██║  ██║██║   ██║█████╔╝ ██║   ██║
+    ╚════██║██║   ██║██║  ██║██║   ██║██╔═██╗ ██║   ██║
+    ███████║╚██████╔╝██████╔╝╚██████╔╝██║  ██╗╚██████╔╝
+    ╚══════╝ ╚═════╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝ ╚═════╝
+    """)
+
+    print("🎲 Generando sudoku aleatorio...")
+    base_matrix = iniciateBaseMatrix()
+    matrix = makeDifficulty(base_matrix, "medium")
     
-    print("Sudoku completo generado:")
-    print_matrix(base_matrix_solved)
-    
-    # Crear sudoku con dificultad (eliminar celdas)
-    matrix = makeDifficulty(base_matrix_solved, "hard")
-    print("\nSudoku a resolver (dificultad: hard):")
+    print("\n" + "="*70)
+    print("📋 SUDOKU A RESOLVER")
+    print("="*70)
     print_matrix(matrix)
     
-    # Resolver con Backtracking
-    print("\n" + "="*50)
-    print("RESOLVIENDO CON BACKTRACKING")
-    print("="*50)
-    matrix_bt = [row[:] for row in matrix]  # Copia del sudoku INCOMPLETO
-    start = time.time()
+    # Contador de celdas vacías
+    empty_cells = sum(1 for i in range(9) for j in range(9) if matrix[i][j] == 0)
+    print(f"\n📊 Celdas vacías: {empty_cells}/81")
+    print(f"📊 Dificultad: MEDIA")
+
+    # ============================================================
+    # MÉTODO 1: BACKTRACKING
+    # ============================================================
+    print("\n" + "="*70)
+    print("🔄 RESOLVIENDO CON BACKTRACKING")
+    print("="*70)
+    
+    matrix_bt = [row[:] for row in matrix]
+    reset()
+    time_start = time.time()
     matrix_solved_bt = backtracking(matrix_bt)
-    time_bt = time.time() - start
-    print(f"Tiempo: {time_bt:.6f} segundos")
+    time_end = time.time()
+    
     if matrix_solved_bt:
+        print("\n✅ Matriz resuelta con Backtracking:")
         print_matrix(matrix_solved_bt)
+        print(f"\n⏱️  Tiempo de ejecución: {time_end - time_start:.6f} segundos")
+        print(f"🔢 Intentos realizados: {get_count():,}")
     else:
-        print("No se encontró solución")
+        print("\n❌ No se encontró solución con Backtracking")
+
+    # ============================================================
+    # MÉTODO 2: BRANCH AND BOUND
+    # ============================================================
+
     
-    # Resolver con Branch and Bound
-    print("\n" + "="*50)
-    print("RESOLVIENDO CON BRANCH AND BOUND")
-    print("="*50)
-    matrix_byb = [row[:] for row in matrix]  # Copia del sudoku INCOMPLETO
-    start = time.time()
-    matrix_solved_byb = branch_and_bound(matrix_byb)
-    time_byb = time.time() - start
-    print(f"Tiempo: {time_byb:.6f} segundos")
-    if matrix_solved_byb:
-        print_matrix(matrix_solved_byb)
+    matrix_bnb = [row[:] for row in matrix]
+    reset()
+    time_start = time.time()
+    matrix_solved_bnb = branch_and_bound(matrix_bnb)
+    time_end = time.time()
+    
+    if matrix_solved_bnb:
+        print("\n✅ Matriz resuelta con Branch and Bound:")
+        print_matrix(matrix_solved_bnb)
+        print(f"\n⏱️  Tiempo de ejecución: {time_end - time_start:.6f} segundos")
+        print(f"🔢 Intentos realizados: {get_count():,}")
     else:
-        print("No se encontró solución")
-    
-    # Comparación (solo si ambos encontraron solución)
-    if matrix_solved_bt and matrix_solved_byb:
-        print("\n" + "="*50)
-        print("COMPARACIÓN DE TIEMPOS")
-        print("="*50)
-        print(f"Backtracking:       {time_bt:.6f} segundos")
-        print(f"Branch & Bound:     {time_byb:.6f} segundos")
-        if time_byb > 0:
-            speedup = time_bt / time_byb
-            print(f"Speedup:            {speedup:.2f}x")
-        
-        # Verificar que ambas soluciones son iguales
-        if matrix_solved_bt == matrix_solved_byb:
-            print("\n✓ Ambas soluciones son idénticas")
-        else:
-            print("\n⚠ Las soluciones son diferentes")
+        print("\n❌ No se encontró solución con Branch and Bound")
+
 
 if __name__ == "__main__":
     main()
