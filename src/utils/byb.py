@@ -55,18 +55,29 @@ def _select_mrv_cell(S: list[list[int]]) -> Optional[Tuple[int, int, Set[int]]]:
                 break
     return best
 
-def _global_candidate_frequency(S: list[list[int]]) -> Counter:
-    """Cuenta cuántas veces aparece cada valor (1..9) como candidato en el tablero."""
+def _global_candidate_stats(S: list[list[int]]) -> tuple[Counter, int]:
+    """Devuelve (frecuenciaGlobalDeValores, maximoTamañoDeDominioPorCelda).
+    - frecuenciaGlobalDeValores: Counter con cuántas veces aparece cada valor 1..9 como candidato.
+    - maximoTamañoDeDominioPorCelda: máximo número de candidatos entre todas las celdas vacías.
+    """
     cnt = Counter()
+    max_dom = 0
     for (r, c) in _all_empty_cells(S):
-        for v in generatePosibleValues(S, r, c):
+        cands = generatePosibleValues(S, r, c)
+        l = len(cands)
+        if l > max_dom:
+            max_dom = l
+        for v in cands:
             cnt[v] += 1
-    return cnt
+    return cnt, max_dom
 
 def _compute_bounds(S: list[list[int]]):
     """Calcula cota inferior (LB) y cota superior (UB) según lo solicitado.
-    - LB = tamaño de candidatos de la celda MRV = minOpcionesDisponibles
-    - UB = min(LB, max_{v en cand(MRV)} frecuenciaGlobal(v))
+    - LB = tamaño de candidatos de la celda MRV = mínimo de opciones disponibles.
+    - UB = min( mayorCantidadDeValoresDisponiblesPorNodo,
+                max_{v en cand(MRV)} frecuenciaGlobal(v) ),
+      donde mayorCantidadDeValoresDisponiblesPorNodo es el máximo tamaño de dominio
+      entre todas las celdas vacías del tablero actual.
     Devuelve (LB, UB, (row,col,cands), freq_map)
     """
     mrv = _select_mrv_cell(S)
@@ -78,15 +89,12 @@ def _compute_bounds(S: list[list[int]]):
         # ya se detectó inconsistencia -> poda
         return 0, 0, mrv, Counter()
     lb = len(cands)
-    freq = _global_candidate_frequency(S)
-    if cands:
-        max_freq = max(freq[v] for v in cands)
-    else:
-        max_freq = 0
-    ub = min(lb, max_freq)
+    freq, max_domain = _global_candidate_stats(S)
+    max_freq = max((freq[v] for v in cands), default=0)
+    ub = min(max_domain, max_freq)
     return lb, ub, mrv, freq
 
-def branchAndBound(S: list[list[int]], verbose: bool = False, debug_limit: Optional[int] = None) -> Optional[list[list[int]]]:
+def branchAndBound(S: list[list[int]], verbose: bool = False, debug_limit: Optional[int] = None, beam: bool = False) -> Optional[list[list[int]]]:
     """Resuelve el Sudoku usando Branch & Bound con MRV y cotas LB/UB solicitadas.
     - Prioridad de expansión: menor LB primero (best-first)
     - Poda: si alguna celda tiene 0 candidatos, se descarta el estado
@@ -139,11 +147,12 @@ def branchAndBound(S: list[list[int]], verbose: bool = False, debug_limit: Optio
             continue
 
         # Ordenar candidatos por frecuencia global DESC (los más comunes primero)
-        # y generar solo los primeros 'cur_ub' candidatos
         ordered = sorted(cands, key=lambda v: freq.get(v, 0), reverse=True)
-        limit = max(1, cur_ub)  # por seguridad, al menos 1
-        _log(f"[B&B] ordered={ordered} limit={limit}")
-        for v in ordered[:limit]:
+        limit = min(len(cands), max(1, cur_ub))
+        mode = 'beam' if beam else 'soft'
+        _log(f"[B&B] ordered={ordered} limit={limit} mode={mode}")
+        seq = ordered[:limit] if beam else ordered
+        for idx, v in enumerate(seq):
             # Generar hijo
             child = deepcopy(board)
             child[r][c] = v
@@ -151,34 +160,10 @@ def branchAndBound(S: list[list[int]], verbose: bool = False, debug_limit: Optio
             if isFactible(child, v, r, c):
                 # Calcular la prioridad del hijo
                 child_lb, _, _, _ = _compute_bounds(child)
+                # Empujar hijo
                 heapq.heappush(heap, (child_lb, tie, child))
-                _log(f"[B&B]  -> push v={v} child_lb={child_lb} new_heap_size={len(heap)}")
+                rank = 'prio' if idx < limit else 'defer'
+                _log(f"[B&B]  -> push v={v} child_lb={child_lb} rank={rank} new_heap_size={len(heap)}")
                 tie += 1
 
-    return None  # No se encontró solución
-
-# Nota: Las funciones auxiliares de factibilidad ya existen en utils.utils
-# (checkRow, checkCol, checkCuadrante, isFactible). Se evita duplicarlas aquí.
-
-# def branchAndBound():
-#     env = inicializarEstructura()
-#     nodoRaiz = crearNodoRaiz()
-#     agregar(env, nodoRaiz)
-#     cota = actualizarCota(cota, nodoRaiz)
-#     mejorSolucion = null
-#     while env !== vacio: # este vacio tenemos q definir q seria, si long = 0 o un conjunto vacio, ni idea
-#         nodo = primero(env)
-#         if !podar(nodo, cota):
-#             hijos = generarHijos(nodo)
-#             for hijo in hijos:
-#                 if !podar(hijo, cota):
-#                     if esSolucion(hijo):
-#                         if esMejor(mejorSolucion, hijo):
-#                             mejorSolucion = hijo
-#                             cota = actualizarCota(cota, hijo)
-#                         else:
-#                             agregar(env, hijo)
-#                             cota = actualizarCota(cota, hijo)
-
-    
-                        
+    return None  # No se encontró solución          
