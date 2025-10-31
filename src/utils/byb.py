@@ -29,32 +29,55 @@ def generatePosibleValues(S: list[list[int]], row: int, col: int) -> Set[int]:
     return {1, 2, 3, 4, 5, 6, 7, 8, 9} - v_fila - v_col - v_cuadrante
 
 # no se si usar este PriorityQueue o una lista de nodos, por ahora lo dejo como PriorityQueue
-def iniciarColaDePrioridad() -> PriorityQueue:
-    return PriorityQueue()
+# se almacena la cota, la celda y los valores posibles en el nodo
+def iniciarColaDePrioridad(S: list[list[int]]) -> PriorityQueue[tuple[int, tuple[int, int, set[int]]]]:
+    cola: PriorityQueue[tuple[int, tuple[int, int, set[int]]]] = PriorityQueue()
+    for i in range(9):
+        for j in range(9):
+            if S[i][j] != 0:
+                cota = calcularCotaInferior(S, i, j)
+                # cota, celda y valores posibles
+                cola.put((cota, (i, j, generatePosibleValues(S, i, j))))
 
-# Faltan calculos de cotas
+    return cola
+
+# cota inferior: cantidad de opciones disponibles por nodo a poner
+def calcularCotaInferior(S: list[list[int]], row: int, col: int) -> int:
+    # conjunto con los valores que hay en esa fila
+    v_fila: Set[int] = {S[row][col] for col in range(9) if S[row][col] != 0} 
+    # conjunto con los valores que hay en esa columna
+    v_col: Set[int] = {S[row][col] for row in range(9) if S[row][col] != 0} 
+    # conjunto con los valores que hay en ese cuadrante
+    v_cuadrante: Set[int] = {S[(row // 3) * 3 + i][(col // 3) * 3 + j] for i in range(3) for j in range(3) if S[(row // 3) * 3 + i][(col // 3) * 3 + j] != 0}
+
+    candidatos: Set[int] = {1, 2, 3, 4, 5, 6, 7, 8, 9} - v_fila - v_col - v_cuadrante
+    return len(candidatos) # size() es el numero de elementos en el conjunto
 
 # Faltan podas por heuristica
 
-def branchAndBound(S: list[list[int]], E = 0) -> list[list[int]]:
-    if E == 81:
-        return S
-    row, col = E // 9, E % 9
+def podar(nodo: tuple[int, tuple[int, int, set[int]]]) -> bool:
+    return False
+
+def branchAndBound(S: list[list[int]]) -> list[list[int]]:
+    E = 0
+    lim = 0
+    ENV = iniciarColaDePrioridad(S)
+    # ENV.put(0, 0) # agregar nodo raiz ???
+    
 
     # Saltar los numeros ya llenados (diagonal al crear y numeros ya dados en el q hay q resolver)
-    if S[row][col] != 0:
-        return branchAndBound(S, E + 1)
+    # if S[row][col] != 0:
+    #     return branchAndBound(S, E + 1)
 
-    values: Set[int] = generatePosibleValues(S, row, col)
+    while not ENV.empty():
+        nodo = ENV.get() # saca un nodo de la cola de prioridad, el primero de la cola
+        print(f"Nodo: {nodo}")
+        if podar(nodo) == False:
+            print("Poda exitosa")
+        else:
+            print("Poda fallida")
 
-    for v in values:
-        S[row][col] = v
-        increment('byb')
-        if isFactible(S, v, row, col):
-            resultado = branchAndBound(S, E + 1)
-            if resultado is not None:  # verifica q el resultado no sea None, si es None, no se devuelve nada
-                return resultado
-        S[row][col] = 0
+        
     return None  # Ningún valor funcionó
 
 def generateValuesBy(matrix: list[list[int]], row: int, col: int) -> Set[int]:
