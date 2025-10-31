@@ -5,8 +5,20 @@
 # Algoritmo Backtracking como en la diapo
 from queue import PriorityQueue
 from typing import Set
-from utils.utils import isFactible
-from utils.counter import increment
+from utils import isFactible
+from counter import increment
+
+sudoku_prueba: list[list[int]] = [
+    [0, 0, 0, 4, 0, 0, 0, 8, 0],
+    [0, 5, 0, 0, 8, 0, 0, 0, 0],
+    [0, 0, 4, 0, 3, 7, 5, 0, 0],
+    [0, 0, 0, 0, 0, 3, 0, 7, 8],
+    [0, 6, 8, 0, 1, 2, 0, 0, 5],
+    [0, 7, 9, 8, 6, 0, 0, 2, 1],
+    [0, 0, 0, 3, 9, 8, 0, 6, 7],
+    [0, 0, 0, 5, 0, 1, 9, 3, 0],
+    [0, 0, 0, 0, 7, 4, 8, 0, 0]
+]
 
 # Quiero implementar una solucion de sudoku utilizando branch and bound y tomando de heuristica para podar que siempre busque 
 # el nodo con menor cantidad de opciones disponibles. Quiero que la cota inferior sea el minimo de opciones disponibles y la
@@ -16,8 +28,38 @@ from utils.counter import increment
 # Cota inferior: minimo de opciones disponibles
 # Cota superior: min(minOpcionesDisponibles, maxVecesQueApareceUnValor)
 
-# dado fila, columna y cuadrante para una celda, genera los valores posibles utilizando conjuntos
+class NodoSudoku:
+    """representa un nodo en el arbol de busqueda"""
+    def __init__(self, fila: int, columna: int, valores_posibles: Set[int], 
+                 cota_inferior: int, cota_superior: int, tablero: list[list[int]] = None):
+        self.fila = fila
+        self.columna = columna
+        self.valores_posibles = valores_posibles
+        self.cota_inferior = cota_inferior
+        # self.cota_superior = cota_superior
+        self.tablero = tablero  # Opcional: para guardar el estado completo
+    
+    def __lt__(self, other):
+        """Para PriorityQueue: menor cota = mayor prioridad"""
+        if self.cota_inferior != other.cota_inferior:
+            return self.cota_inferior < other.cota_inferior
+        if self.fila != other.fila:
+            return self.fila < other.fila
+        return self.columna < other.columna
+    
+    def __str__(self):
+        return f"Nodo(fila={self.fila}, col={self.columna}, cota inferior={self.cota_inferior}, opciones={len(self.valores_posibles)})"
+
+def is_complete(matrix: list[list[int]]) -> bool:
+    """verifica si el sudoku está completamente resuelto"""
+    for i in range(9):
+        for j in range(9):
+            if matrix[i][j] == 0:
+                return False
+    return True
+
 def generatePosibleValues(S: list[list[int]], row: int, col: int) -> Set[int]:
+    """dado fila, columna y cuadrante para una celda, genera los valores posibles utilizando conjuntos"""
     # conjunto con los valores que hay en esa fila
     v_fila: Set[int] = {S[row][col] for col in range(9) if S[row][col] != 0} 
     # conjunto con los valores que hay en esa columna
@@ -29,20 +71,24 @@ def generatePosibleValues(S: list[list[int]], row: int, col: int) -> Set[int]:
     return {1, 2, 3, 4, 5, 6, 7, 8, 9} - v_fila - v_col - v_cuadrante
 
 # no se si usar este PriorityQueue o una lista de nodos, por ahora lo dejo como PriorityQueue
-# se almacena la cota, la celda y los valores posibles en el nodo
-def iniciarColaDePrioridad(S: list[list[int]]) -> PriorityQueue[tuple[int, tuple[int, int, set[int]]]]:
-    cola: PriorityQueue[tuple[int, tuple[int, int, set[int]]]] = PriorityQueue()
+def iniciarColaDePrioridad(S: list[list[int]]) -> PriorityQueue[NodoSudoku]:
+    """
+    se almacena la cota, la celda y los valores posibles en el nodo
+    """
+    cola: PriorityQueue[NodoSudoku] = PriorityQueue()
     for i in range(9):
         for j in range(9):
-            if S[i][j] != 0:
+            if S[i][j] == 0:
                 cota = calcularCotaInferior(S, i, j)
                 # cota, celda y valores posibles
-                cola.put((cota, (i, j, generatePosibleValues(S, i, j))))
+                nodo = NodoSudoku(i, j, generatePosibleValues(S, i, j), cota, S)
+                # cola.put((cota, nodo))
+                cola.put(nodo)
 
     return cola
 
-# cota inferior: cantidad de opciones disponibles por nodo a poner
 def calcularCotaInferior(S: list[list[int]], row: int, col: int) -> int:
+    """cota inferior: cantidad de opciones disponibles por nodo a poner"""
     # conjunto con los valores que hay en esa fila
     v_fila: Set[int] = {S[row][col] for col in range(9) if S[row][col] != 0} 
     # conjunto con los valores que hay en esa columna
@@ -113,25 +159,5 @@ def checkRow(matrix: list[list[int]], v: int, row: int, col: int) -> bool:
             return False
     return True
 
-# def branchAndBound():
-#     env = inicializarEstructura()
-#     nodoRaiz = crearNodoRaiz()
-#     agregar(env, nodoRaiz)
-#     cota = actualizarCota(cota, nodoRaiz)
-#     mejorSolucion = null
-#     while env !== vacio: # este vacio tenemos q definir q seria, si long = 0 o un conjunto vacio, ni idea
-#         nodo = primero(env)
-#         if !podar(nodo, cota):
-#             hijos = generarHijos(nodo)
-#             for hijo in hijos:
-#                 if !podar(hijo, cota):
-#                     if esSolucion(hijo):
-#                         if esMejor(mejorSolucion, hijo):
-#                             mejorSolucion = hijo
-#                             cota = actualizarCota(cota, hijo)
-#                         else:
-#                             agregar(env, hijo)
-#                             cota = actualizarCota(cota, hijo)
-
-    
-                        
+# test para ejecutar el branch and bound con la matriz de prueba
+branchAndBound(sudoku_prueba)
