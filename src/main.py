@@ -17,12 +17,11 @@ def main():
     ╚══════╝ ╚═════╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝ ╚═════╝
     """)
 
-    print("🎲 Generando sudoku aleatorio...")
     base_matrix = iniciateBaseMatrix()
     matrix = makeDifficulty(base_matrix, "medium")
     
     print("\n" + "="*70)
-    print("📋 SUDOKU A RESOLVER")
+    print("SUDOKU A RESOLVER")
     print("="*70)
     print_matrix(matrix)
     
@@ -35,7 +34,7 @@ def main():
     # MÉTODO 1: BACKTRACKING
     # ============================================================
     print("\n" + "="*70)
-    print("🔄 RESOLVIENDO CON BACKTRACKING")
+    print("RESOLVIENDO CON BACKTRACKING")
     print("="*70)
     
     matrix_bt = [row[:] for row in matrix]
@@ -47,6 +46,10 @@ def main():
     if matrix_solved_bt:
         print("\n✅ Matriz resuelta con Backtracking:")
         print_matrix(matrix_solved_bt)
+
+        print(f"inicio {time_start}")
+        print(f"fin {time_end}")
+
         print(f"\n⏱️  Tiempo de ejecución: {time_end - time_start:.6f} segundos")
         print(f"🔢 Intentos realizados: {get_count():,}")
     else:

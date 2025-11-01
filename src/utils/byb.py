@@ -166,7 +166,7 @@ def branch_and_bound(matrix: list[list[int]]) -> Optional[list[list[int]]]:
     while priority_queue:
         current_lb, current_ub, _, current_node = heapq.heappop(priority_queue)
         
-        # Poda explícita
+        # Poda explícita (el "continue" salta a la proxima iteración, descartando el nodo)
         if current_node.lower_bound >= upper_bound_global:
             continue
         
