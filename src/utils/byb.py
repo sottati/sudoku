@@ -108,10 +108,7 @@ class SudokuNode:
     
     def get_most_constrained_cell(self) -> Optional[Tuple[int, int, Set[int]]]:
         """
-        Extrae la celda más restringida del heap.
-        
-        ANTES: Recorría todo el tablero O(81)
-        AHORA: Extrae del heap O(log n)
+        Extrae la celda vacía con MENOS opciones de la cola de prioridad.
         
         Returns:
             Optional[Tuple[int, int, Set[int]]]: (fila, columna, opciones) o None
@@ -160,47 +157,43 @@ def branch_and_bound(matrix: list[list[int]]) -> Optional[list[list[int]]]:
     heapq.heappush(priority_queue, (initial_node.lower_bound, initial_node.upper_bound, counter, initial_node))
     counter += 1
     
-    upper_bound_global = float('inf')
+    limite = float('inf')
     best_solution = None
     
     while priority_queue:
         current_lb, current_ub, _, current_node = heapq.heappop(priority_queue)
         
-        # Poda explícita (el "continue" salta a la proxima iteración, descartando el nodo)
-        if current_node.lower_bound >= upper_bound_global:
-            continue
-        
-        # ¿Solución encontrada?
-        if current_node.is_solved():
-            solution_ub = current_node.upper_bound
+        # Poda explícita - cuando la cota inferior sea mayor o igual al límite actual
+        if current_node.lower_bound < limite:
             
-            if solution_ub < upper_bound_global:
-                upper_bound_global = solution_ub
-                best_solution = current_node.matrix
+            # ¿Solución encontrada?
+            if current_node.is_solved():
+                solution_ub = current_node.upper_bound
+                
+                if solution_ub < limite:
+                    limite = solution_ub
+                    best_solution = current_node.matrix
             
-            continue
-        
-        # MEJORA: Extraer celda más restringida del heap O(log n)
-        result = current_node.get_most_constrained_cell()
-        
-        if result is None:
-            continue
-        
-        row, col, available_values = result
-        
-        # Generar hijos
-        for value in sorted(available_values):
-            increment()
-            
-            new_matrix = [r[:] for r in current_node.matrix]
-            new_matrix[row][col] = value
-            
-            child_node = SudokuNode(new_matrix, depth=current_node.depth + 1)
-            
-            # Poda implícita
-            if child_node.lower_bound < upper_bound_global:
-                heapq.heappush(priority_queue, 
-                             (child_node.lower_bound, child_node.upper_bound, counter, child_node))
-                counter += 1
-    
+            else:  # NO está resuelto, seguir ramificando
+                # MEJORA: Extraer celda más restringida del heap O(log n)
+                result = current_node.get_most_constrained_cell()
+                
+                if result is not None:
+                    row, col, available_values = result
+                    
+                    # Generar hijos
+                    for value in sorted(available_values):
+                        increment()
+                        
+                        new_matrix = [r[:] for r in current_node.matrix]
+                        new_matrix[row][col] = value
+                        
+                        child_node = SudokuNode(new_matrix, depth=current_node.depth + 1)
+                        
+                        # Poda implícita
+                        if child_node.lower_bound < limite:
+                            heapq.heappush(priority_queue, 
+                                         (child_node.lower_bound, child_node.upper_bound, counter, child_node))
+                            counter += 1
+
     return best_solution

@@ -29,7 +29,7 @@ def main():
     # Contador de celdas vacías
     empty_cells = sum(1 for i in range(9) for j in range(9) if matrix[i][j] == 0)
     print(f"\n📊 Celdas vacías: {empty_cells}/81")
-    print(f"📊 Dificultad: MEDIA")
+    print(f"📊 Dificultad: ALTA")
 
     # ============================================================
     # MÉTODO 1: BACKTRACKING
@@ -48,7 +48,7 @@ def main():
     if matrix_solved_bt:
         print("\n✅ Matriz resuelta con Backtracking:")
         print_matrix(matrix_solved_bt)
-
+        # testing prints
         print(f"inicio {time_start}")
         print(f"fin {time_end}")
 
