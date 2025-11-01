@@ -31,7 +31,7 @@ sudoku_prueba: list[list[int]] = [
 class NodoSudoku:
     """representa un nodo en el arbol de busqueda"""
     def __init__(self, fila: int, columna: int, valores_posibles: Set[int], 
-                 cota_inferior: int, cota_superior: int, tablero: list[list[int]] = None):
+                 cota_inferior: int, tablero: list[list[int]] = None):
         self.fila = fila
         self.columna = columna
         self.valores_posibles = valores_posibles
@@ -49,6 +49,9 @@ class NodoSudoku:
     
     def __str__(self):
         return f"Nodo(fila={self.fila}, col={self.columna}, cota inferior={self.cota_inferior}, opciones={len(self.valores_posibles)})"
+
+# diccionario para contar la cantidad de veces que aparece cada valor en el tablero
+freq_values: dict[int, int] = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0}
 
 def is_complete(matrix: list[list[int]]) -> bool:
     """verifica si el sudoku está completamente resuelto"""
@@ -84,8 +87,18 @@ def iniciarColaDePrioridad(S: list[list[int]]) -> PriorityQueue[NodoSudoku]:
                 nodo = NodoSudoku(i, j, generatePosibleValues(S, i, j), cota, S)
                 # cola.put((cota, nodo))
                 cola.put(nodo)
+            # si el valor no es 0, se agrega a la frecuencia de valores
+            else:
+                freq_values[S[i][j]] += 1
 
     return cola
+
+def generarHijos(nodo: NodoSudoku) -> list[NodoSudoku]:
+    """genera los hijos del nodo"""
+    hijos: list[NodoSudoku] = []
+    for valor in nodo.valores_posibles:
+        hijos.append(NodoSudoku(nodo.fila, nodo.columna, {valor}, nodo.cota_inferior, nodo.tablero))
+    return hijos
 
 def calcularCotaInferior(S: list[list[int]], row: int, col: int) -> int:
     """cota inferior: cantidad de opciones disponibles por nodo a poner"""
@@ -97,37 +110,35 @@ def calcularCotaInferior(S: list[list[int]], row: int, col: int) -> int:
     v_cuadrante: Set[int] = {S[(row // 3) * 3 + i][(col // 3) * 3 + j] for i in range(3) for j in range(3) if S[(row // 3) * 3 + i][(col // 3) * 3 + j] != 0}
 
     candidatos: Set[int] = {1, 2, 3, 4, 5, 6, 7, 8, 9} - v_fila - v_col - v_cuadrante
-    return len(candidatos) # size() es el numero de elementos en el conjunto
+
+    return len(candidatos) # cantidad de opciones disponibles para esa celda
 
 # Faltan podas por heuristica
 
 def podar(nodo: tuple[int, tuple[int, int, set[int]]]) -> bool:
+    """podar si no hay valores posibles para esa celda"""
+    if len(nodo.valores_posibles) == 0:
+        return True
     return False
 
 def branchAndBound(S: list[list[int]]) -> list[list[int]]:
-    E = 0
-    lim = 0
-    ENV = iniciarColaDePrioridad(S)
-    # ENV.put(0, 0) # agregar nodo raiz ???
+    cola = iniciarColaDePrioridad(S)
+    nodo_raiz = NodoSudoku(0, 0, generatePosibleValues(S, 0, 0), calcularCotaInferior(S, 0, 0), S)
+    cola.put(nodo_raiz)
+    cota = calcularCotaInferior(S, 0, 0)
+    lim = 0 # mejor solucion parcial
     
-
-    # Saltar los numeros ya llenados (diagonal al crear y numeros ya dados en el q hay q resolver)
-    # if S[row][col] != 0:
-    #     return branchAndBound(S, E + 1)
-
-    while not ENV.empty():
-        nodo = ENV.get() # saca un nodo de la cola de prioridad, el primero de la cola
+    while not cola.empty():
+        nodo = cola.get() # saca un nodo de la cola de prioridad, el primero de la cola
         print(f"Nodo: {nodo}")
-        if podar(nodo) == False:
+        if not podar(nodo):
+            if esSolucion(nodo):
             print("Poda exitosa")
         else:
             print("Poda fallida")
-
-        
+  
     return None  # Ningún valor funcionó
 
-def generateValuesBy(matrix: list[list[int]], row: int, col: int) -> Set[int]:
-    return True
 
 def checkCuadrante(matrix: list[list[int]], v: int, row: int, col: int) -> bool:
     cuadrante_row = (row // 3) * 3
@@ -161,3 +172,4 @@ def checkRow(matrix: list[list[int]], v: int, row: int, col: int) -> bool:
 
 # test para ejecutar el branch and bound con la matriz de prueba
 branchAndBound(sudoku_prueba)
+print(freq_values)
