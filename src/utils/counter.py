@@ -1,34 +1,17 @@
-"""
-Módulo para contar intentos en la resolución de Sudoku
-Útil para comparar la eficiencia de diferentes algoritmos
-"""
+_counters = {}
 
-_count = 0
+def increment(counter_id='default'):
+    global _counters
+    if counter_id not in _counters:
+        _counters[counter_id] = 0
+    _counters[counter_id] += 1
 
+def get_count(counter_id='default'):
+    return _counters.get(counter_id, 0)
 
-def increment():
-    """
-    Incrementa el contador en 1.
-    Se llama cada vez que se intenta colocar un valor en una celda.
-    """
-    global _count
-    _count += 1
-
-
-def get_count():
-    """
-    Obtiene el valor actual del contador.
-    
-    Returns:
-        int: Número de intentos realizados
-    """
-    return _count
-
-
-def reset():
-    """
-    Reinicia el contador a 0.
-    Se debe llamar antes de resolver un nuevo sudoku.
-    """
-    global _count
-    _count = 0
+def reset(counter_id=None):
+    global _counters
+    if counter_id:
+        _counters[counter_id] = 0
+    else:
+        _counters.clear()

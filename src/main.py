@@ -1,3 +1,4 @@
+import copy
 from utils.utils import print_matrix, makeDifficulty
 from utils.backtracking import iniciateBaseMatrix, backtracking
 from utils.byb import branch_and_bound
@@ -18,7 +19,7 @@ def main():
     """)
 
     base_matrix = iniciateBaseMatrix()
-    matrix = makeDifficulty(base_matrix, "medium")
+    matrix = makeDifficulty(base_matrix, "hard")
     
     print("\n" + "="*70)
     print("SUDOKU A RESOLVER")
@@ -39,8 +40,9 @@ def main():
     
     matrix_bt = [row[:] for row in matrix]
     reset()
+    copy_matriz = copy.deepcopy(matrix_bt)
     time_start = time.time()
-    matrix_solved_bt = backtracking(matrix_bt)
+    matrix_solved_bt = backtracking(copy_matriz)
     time_end = time.time()
     
     if matrix_solved_bt:
@@ -51,7 +53,7 @@ def main():
         print(f"fin {time_end}")
 
         print(f"\n⏱️  Tiempo de ejecución: {time_end - time_start:.6f} segundos")
-        print(f"🔢 Intentos realizados: {get_count():,}")
+        print(f"🔢 Intentos realizados: {get_count('backtracking'):,}")
     else:
         print("\n❌ No se encontró solución con Backtracking")
 

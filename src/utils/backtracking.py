@@ -1,4 +1,5 @@
 from utils.utils import generateValues, initialize_matrix, isFactible, populate_matrix
+from utils.counter import increment
 
 # Algoritmo Backtracking como en la diapo
 def backtracking(S: list[list[int]], E = 0) -> list[list[int]]:
@@ -13,9 +14,10 @@ def backtracking(S: list[list[int]], E = 0) -> list[list[int]]:
     values = generateValues()
     for v in values:
         S[row][col] = v
+        increment('backtracking')
         if isFactible(S, v, row, col):
             resultado = backtracking(S, E + 1)
-            if resultado is not None:  # ¡VERIFICAR ÉXITO!
+            if resultado is not None:  # verifica q el resultado no sea None, si es None, no se devuelve nada
                 return resultado
         S[row][col] = 0
     return None  # Ningún valor funcionó
