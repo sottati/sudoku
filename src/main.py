@@ -1,81 +1,60 @@
-import copy
-from utils.utils import print_matrix, makeDifficulty
-from utils.backtracking import iniciateBaseMatrix, backtracking
-from utils.byb import branch_and_bound
-from utils.counter import reset, get_count
+"""
+Sudoku Solver - Main Entry Point
+Implementa UI con termios para juego manual y resolución automática
+"""
+from ui.terminal import menu, clear_screen
+from ui.game import modo_manual, modo_automatico
 
-import time
-
-from typing import Set
 
 def main():
-    print("""
+    """Función principal con menú interactivo"""
+
+    while True:
+        clear_screen()
+        print("""
     ███████╗██╗   ██╗██████╗  ██████╗ ██╗  ██╗██╗   ██╗
     ██╔════╝██║   ██║██╔══██╗██╔═══██╗██║ ██╔╝██║   ██║
     ███████╗██║   ██║██║  ██║██║   ██║█████╔╝ ██║   ██║
     ╚════██║██║   ██║██║  ██║██║   ██║██╔═██╗ ██║   ██║
     ███████║╚██████╔╝██████╔╝╚██████╔╝██║  ██╗╚██████╔╝
     ╚══════╝ ╚═════╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝ ╚═════╝
-    """)
+        """)
 
-    base_matrix = iniciateBaseMatrix()
-    matrix = makeDifficulty(base_matrix, "hard")
-    
-    print("\n" + "="*70)
-    print("SUDOKU A RESOLVER")
-    print("="*70)
-    print_matrix(matrix)
-    
-    # Contador de celdas vacías
-    empty_cells = sum(1 for i in range(9) for j in range(9) if matrix[i][j] == 0)
-    print(f"\n📊 Celdas vacías: {empty_cells}/81")
-    print(f"📊 Dificultad: MEDIA")
+        # Menú principal
+        opciones_principal = ["Modo Manual", "Modo Automático", "Salir"]
+        seleccion = menu("=== MENÚ PRINCIPAL ===", opciones_principal)
 
-    # ============================================================
-    # MÉTODO 1: BACKTRACKING
-    # ============================================================
-    print("\n" + "="*70)
-    print("RESOLVIENDO CON BACKTRACKING")
-    print("="*70)
-    
-    matrix_bt = [row[:] for row in matrix]
-    reset()
-    copy_matriz = copy.deepcopy(matrix_bt)
-    time_start = time.time()
-    matrix_solved_bt = backtracking(copy_matriz)
-    time_end = time.time()
-    
-    if matrix_solved_bt:
-        print("\n✅ Matriz resuelta con Backtracking:")
-        print_matrix(matrix_solved_bt)
+        if seleccion == 2:  # Salir
+            clear_screen()
+            print("\n  ¡Hasta luego!\n")
+            break
 
-        print(f"inicio {time_start}")
-        print(f"fin {time_end}")
+        # Seleccionar dificultad
+        clear_screen()
+        opciones_dificultad = ["Fácil", "Medio", "Difícil"]
+        dificultad_idx = menu("=== SELECCIONAR DIFICULTAD ===", opciones_dificultad)
 
-        print(f"\n⏱️  Tiempo de ejecución: {time_end - time_start:.6f} segundos")
-        print(f"🔢 Intentos realizados: {get_count('backtracking'):,}")
-    else:
-        print("\n❌ No se encontró solución con Backtracking")
+        difficulty_map = {0: "easy", 1: "medium", 2: "hard"}
+        difficulty = difficulty_map[dificultad_idx]
 
-    # ============================================================
-    # MÉTODO 2: BRANCH AND BOUND
-    # ============================================================
+        if seleccion == 0:  # Modo Manual
+            modo_manual(difficulty)
 
-    
-    matrix_bnb = [row[:] for row in matrix]
-    reset()
-    time_start = time.time()
-    matrix_solved_bnb = branch_and_bound(matrix_bnb)
-    time_end = time.time()
-    
-    if matrix_solved_bnb:
-        print("\n✅ Matriz resuelta con Branch and Bound:")
-        print_matrix(matrix_solved_bnb)
-        print(f"\n⏱️  Tiempo de ejecución: {time_end - time_start:.6f} segundos")
-        print(f"🔢 Intentos realizados: {get_count():,}")
-    else:
-        print("\n❌ No se encontró solución con Branch and Bound")
+        elif seleccion == 1:  # Modo Automático
+            # Seleccionar algoritmo
+            clear_screen()
+            opciones_algoritmo = ["Backtracking", "Branch and Bound", "Ambos (comparar)"]
+            algoritmo_idx = menu("=== SELECCIONAR ALGORITMO ===", opciones_algoritmo)
+
+            algorithm_map = {0: "backtracking", 1: "bnb", 2: "both"}
+            algorithm = algorithm_map[algoritmo_idx]
+
+            modo_automatico(difficulty, algorithm)
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        clear_screen()
+        print("\n  Programa interrumpido\n")
