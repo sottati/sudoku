@@ -39,8 +39,6 @@ class SudokuNode:
         """
         Construye la cola de prioridad de celdas vacías.
         
-        REEMPLAZA a find_most_constrained_cell():
-        - En lugar de buscar la celda más restringida cada vez,
           construimos un heap UNA VEZ con todas las celdas vacías
         - El heap mantiene automáticamente las celdas ordenadas por MCV
         
@@ -116,7 +114,7 @@ class SudokuNode:
         if not self.cells_heap:
             return None  # No hay celdas vacías
         
-        # Extraer la celda con MENOS opciones (cabeza del heap)
+        # Extraer la celda con MENOS opciones (cabeza de la cola de prioridad)
         num_options, row, col, _, options = heapq.heappop(self.cells_heap)
         
         return (row, col, options)
@@ -126,7 +124,11 @@ class SudokuNode:
         return len(self.cells_heap) == 0
     
     def __lt__(self, other):
-        """Comparador para la cola de prioridad de nodos."""
+        """Comparador para ordenar los nodos en la cola de prioridad.
+        
+        Ordena primero por cota inferior, luego por cota superior,
+        y finalmente por profundidad (mayor profundidad primero).
+        """
         if self.lower_bound != other.lower_bound:
             return self.lower_bound < other.lower_bound
         if self.upper_bound != other.upper_bound:
@@ -158,10 +160,10 @@ def branch_and_bound(matrix: list[list[int]]) -> Optional[list[list[int]]]:
     counter += 1
     
     limite = float('inf')
-    best_solution = None
+    solution = None
     
     while priority_queue:
-        current_lb, current_ub, _, current_node = heapq.heappop(priority_queue)
+        current_lb, current_ub, _, current_node = heapq.heappop(priority_queue) 
         
         # Poda explícita - cuando la cota inferior sea mayor o igual al límite actual
         if current_node.lower_bound < limite:
@@ -172,10 +174,10 @@ def branch_and_bound(matrix: list[list[int]]) -> Optional[list[list[int]]]:
                 
                 if solution_ub < limite:
                     limite = solution_ub
-                    best_solution = current_node.matrix
+                    solution = current_node.matrix
             
             else:  # NO está resuelto, seguir ramificando
-                # MEJORA: Extraer celda más restringida del heap O(log n)
+                # Extrae celda más restringida
                 result = current_node.get_most_constrained_cell()
                 
                 if result is not None:
@@ -196,4 +198,4 @@ def branch_and_bound(matrix: list[list[int]]) -> Optional[list[list[int]]]:
                                          (child_node.lower_bound, child_node.upper_bound, counter, child_node))
                             counter += 1
 
-    return best_solution
+    return solution
