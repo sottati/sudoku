@@ -18,6 +18,7 @@ def main():
     ╚══════╝ ╚═════╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝ ╚═════╝
     """)
 
+    print("Matriz inicial:")
     base_matrix = iniciateBaseMatrix()
     matrix = makeDifficulty(base_matrix, "hard")
     
