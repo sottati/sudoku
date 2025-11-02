@@ -48,9 +48,7 @@ def main():
     if matrix_solved_bt:
         print("\n✅ Matriz resuelta con Backtracking:")
         print_matrix(matrix_solved_bt)
-        # testing prints
-        print(f"inicio {time_start}")
-        print(f"fin {time_end}")
+
 
         print(f"\n⏱️  Tiempo de ejecución: {time_end - time_start:.6f} segundos")
         print(f"🔢 Intentos realizados: {get_count('backtracking'):,}")
