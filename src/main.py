@@ -1,10 +1,10 @@
-from utils.byb import branchAndBound
+import copy
 from utils.utils import print_matrix, makeDifficulty
 from utils.backtracking import iniciateBaseMatrix, backtracking
+from utils.byb import branch_and_bound
 from utils.counter import reset, get_count
 
 import time
-import copy
 
 from typing import Set
 
@@ -20,47 +20,61 @@ def main():
 
     print("Matriz inicial:")
     base_matrix = iniciateBaseMatrix()
-    # print_matrix(base_matrix)
     matrix = makeDifficulty(base_matrix, "hard")
-    print_matrix(matrix)
-
-    # col = 0
-    # row = 0
-
-    # v_fila: Set[int] = {matrix[row][col] for col in range(9) if matrix[row][col] != 0}
-    # v_col: Set[int] = {matrix[row][col] for row in range(9) if matrix[row][col] != 0}
-    # v_cuadrante: Set[int] = {matrix[(row // 3) * 3 + i][(col // 3) * 3 + j] for i in range(3) for j in range(3) if matrix[(row // 3) * 3 + i][(col // 3) * 3 + j] != 0}
-    # v_posibles: Set[int] = {1, 2, 3, 4, 5, 6, 7, 8, 9} - v_fila - v_col - v_cuadrante
-
-    # print(v_fila)
-    # print(v_col)
-    # print(v_cuadrante)
-    # print(v_posibles)
-
-    print("Matriz resuelta con backtracking:")
-    reset()  # Resetea todos los contadores al inicio
-    # copy es un modulo de python que se usa para copiar objetos, deepcopy es una funcion que copia el objeto y todos sus atributos
-    matrix_copy_bt = copy.deepcopy(matrix)  # Copia para no modificar la original
-    time_start = time.time()
-    matrix_solved_bt = backtracking(matrix_copy_bt)
-    time_end = time.time()
-    print_matrix(matrix_solved_bt)
-    print("Tiempo de ejecucion: " + str(time_end - time_start) + " segundos")
-    print("Intentos Backtracking: " + str(get_count('backtracking')))
-
-    print("\nMatriz resuelta con branch and bound:")
-    reset('byb')  # Solo resetea el contador de byb, mantiene backtracking
-    matrix_copy_byb = copy.deepcopy(matrix)  # Copia fresca de la matriz original
-    time_start = time.time()
-    matrix_solved_byb = branchAndBound(matrix_copy_byb)
-    time_end = time.time()
-    print_matrix(matrix_solved_byb)
-    print("Tiempo de ejecucion: " + str(time_end - time_start) + " segundos")
-    print("Intentos Branch and Bound: " + str(get_count('byb')))
     
-    print("\n=== COMPARACION ===")
-    print(f"Backtracking: {get_count('backtracking')} nodos explorados")
-    print(f"Branch and Bound: {get_count('byb')} nodos explorados")
+    print("\n" + "="*70)
+    print("SUDOKU A RESOLVER")
+    print("="*70)
+    print_matrix(matrix)
+    
+    # Contador de celdas vacías
+    empty_cells = sum(1 for i in range(9) for j in range(9) if matrix[i][j] == 0)
+    print(f"\n📊 Celdas vacías: {empty_cells}/81")
+    print(f"📊 Dificultad: ALTA")
+
+    # ============================================================
+    # MÉTODO 1: BACKTRACKING
+    # ============================================================
+    print("\n" + "="*70)
+    print("RESOLVIENDO CON BACKTRACKING")
+    print("="*70)
+    
+    matrix_bt = [row[:] for row in matrix]
+    reset()
+    copy_matriz = copy.deepcopy(matrix_bt)
+    time_start = time.time()
+    matrix_solved_bt = backtracking(copy_matriz)
+    time_end = time.time()
+    
+    if matrix_solved_bt:
+        print("\n✅ Matriz resuelta con Backtracking:")
+        print_matrix(matrix_solved_bt)
+
+
+        print(f"\n⏱️  Tiempo de ejecución: {time_end - time_start:.6f} segundos")
+        print(f"🔢 Intentos realizados: {get_count('backtracking'):,}")
+    else:
+        print("\n❌ No se encontró solución con Backtracking")
+
+    # ============================================================
+    # MÉTODO 2: BRANCH AND BOUND
+    # ============================================================
+
+    
+    matrix_bnb = [row[:] for row in matrix]
+    reset()
+    time_start = time.time()
+    matrix_solved_bnb = branch_and_bound(matrix_bnb)
+    time_end = time.time()
+    
+    if matrix_solved_bnb:
+        print("\n✅ Matriz resuelta con Branch and Bound:")
+        print_matrix(matrix_solved_bnb)
+        print(f"\n⏱️  Tiempo de ejecución: {time_end - time_start:.6f} segundos")
+        print(f"🔢 Intentos realizados: {get_count():,}")
+    else:
+        print("\n❌ No se encontró solución con Branch and Bound")
+
 
 if __name__ == "__main__":
     main()

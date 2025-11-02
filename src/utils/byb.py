@@ -1,175 +1,201 @@
-# Branch and Bound
-# Hay que definir las cotas, definir estrategias etc etc etc
-# dejo escrito el pseudocodigo igual q en backtracking
+"""
+Implementación de Branch and Bound para resolver Sudoku
+Autor: santiago-garbini
+Fecha: 2025-11-01
 
-# Algoritmo Backtracking como en la diapo
-from queue import PriorityQueue
-from typing import Set
-from utils import isFactible
-from counter import increment
+Branch and Bound con cola de prioridad INTERNA de celdas vacías.
 
-sudoku_prueba: list[list[int]] = [
-    [0, 0, 0, 4, 0, 0, 0, 8, 0],
-    [0, 5, 0, 0, 8, 0, 0, 0, 0],
-    [0, 0, 4, 0, 3, 7, 5, 0, 0],
-    [0, 0, 0, 0, 0, 3, 0, 7, 8],
-    [0, 6, 8, 0, 1, 2, 0, 0, 5],
-    [0, 7, 9, 8, 6, 0, 0, 2, 1],
-    [0, 0, 0, 3, 9, 8, 0, 6, 7],
-    [0, 0, 0, 5, 0, 1, 9, 3, 0],
-    [0, 0, 0, 0, 7, 4, 8, 0, 0]
-]
+Heurística: Most Constrained Variable (MCV) implementada con heap
+Cota Inferior: Mínimo de opciones disponibles en cualquier celda vacía
+Cota Superior: Máximo de opciones disponibles en cualquier celda vacía
+"""
 
-# Quiero implementar una solucion de sudoku utilizando branch and bound y tomando de heuristica para podar que siempre busque 
-# el nodo con menor cantidad de opciones disponibles. Quiero que la cota inferior sea el minimo de opciones disponibles y la
-#  cota superior sea el minimo entre: mayor cantidad de valores disponibles por nodo o por maxima cantidad de veces que aparece 
-# un valor en el tablero de los disponibles para ese nodo
+from typing import Set, Tuple, Optional, List
+from utils.counter import increment
+import heapq
 
-# Cota inferior: minimo de opciones disponibles
-# Cota superior: min(minOpcionesDisponibles, maxVecesQueApareceUnValor)
 
-class NodoSudoku:
-    """representa un nodo en el arbol de busqueda"""
-    def __init__(self, fila: int, columna: int, valores_posibles: Set[int], 
-                 cota_inferior: int, tablero: list[list[int]] = None):
-        self.fila = fila
-        self.columna = columna
-        self.valores_posibles = valores_posibles
-        self.cota_inferior = cota_inferior
-        # self.cota_superior = cota_superior
-        self.tablero = tablero  # Opcional: para guardar el estado completo
+class SudokuNode:
+    """
+    Representa un nodo en el árbol de búsqueda de Branch and Bound
+    
+    Attributes:
+        matrix: Estado actual del tablero (9x9)
+        depth: Profundidad del nodo en el árbol
+        cells_heap: Cola de prioridad de celdas vacías (ordenadas por MCV)
+        lower_bound: Mínimo de opciones en alguna celda vacía
+        upper_bound: Máximo de opciones en alguna celda vacía
+    """
+    
+    def __init__(self, matrix: list[list[int]], depth: int = 0):
+        self.matrix = [row[:] for row in matrix]
+        self.depth = depth
+        self.cells_heap: List[Tuple[int, int, int, Set[int]]] = []
+        self.lower_bound = float('inf')
+        self.upper_bound = 0
+        self._build_cells_heap()
+        
+    def _build_cells_heap(self):
+        """
+        Construye la cola de prioridad de celdas vacías.
+        
+          construimos un heap UNA VEZ con todas las celdas vacías
+        - El heap mantiene automáticamente las celdas ordenadas por MCV
+        
+        Heap contiene tuplas: (num_opciones, row, col, opciones_disponibles)
+        Ordenado automáticamente por num_opciones (menor primero)
+        
+        También calcula las cotas mientras construye el heap.
+        """
+        counter = 0
+        min_options = float('inf')
+        max_options = 0
+        
+        for i in range(9):
+            for j in range(9):
+                if self.matrix[i][j] == 0:
+                    options = self._get_available_values(i, j)
+                    num_options = len(options)
+                    
+                    if num_options == 0:
+                        # Estado inválido
+                        self.lower_bound = float('inf')
+                        self.upper_bound = float('inf')
+                        self.cells_heap = []
+                        return
+                    
+                    # Actualizar cotas
+                    min_options = min(min_options, num_options)
+                    max_options = max(max_options, num_options)
+                    
+                    # Agregar celda al heap
+                    # (num_opciones, row, col, counter, opciones)
+                    heapq.heappush(self.cells_heap, (num_options, i, j, counter, options))
+                    counter += 1
+        
+        # Establecer cotas
+        if not self.cells_heap:
+            # No hay celdas vacías (sudoku resuelto)
+            self.lower_bound = 0
+            self.upper_bound = 0
+        else:
+            self.lower_bound = min_options
+            self.upper_bound = max_options
+    
+    def _get_available_values(self, row: int, col: int) -> Set[int]:
+        """Calcula los valores disponibles para una celda específica."""
+        if self.matrix[row][col] != 0:
+            return set()
+        
+        all_values = {1, 2, 3, 4, 5, 6, 7, 8, 9}
+        
+        used_in_row = {self.matrix[row][c] for c in range(9) if self.matrix[row][c] != 0}
+        used_in_col = {self.matrix[r][col] for r in range(9) if self.matrix[r][col] != 0}
+        
+        box_row = (row // 3) * 3
+        box_col = (col // 3) * 3
+        used_in_box = set()
+        
+        for i in range(3):
+            for j in range(3):
+                val = self.matrix[box_row + i][box_col + j]
+                if val != 0:
+                    used_in_box.add(val)
+        
+        return all_values - used_in_row - used_in_col - used_in_box
+    
+    def get_most_constrained_cell(self) -> Optional[Tuple[int, int, Set[int]]]:
+        """
+        Extrae la celda vacía con MENOS opciones de la cola de prioridad.
+        
+        Returns:
+            Optional[Tuple[int, int, Set[int]]]: (fila, columna, opciones) o None
+        """
+        if not self.cells_heap:
+            return None  # No hay celdas vacías
+        
+        # Extraer la celda con MENOS opciones (cabeza de la cola de prioridad)
+        num_options, row, col, _, options = heapq.heappop(self.cells_heap)
+        
+        return (row, col, options)
+    
+    def is_solved(self) -> bool:
+        """Verifica si el sudoku está resuelto (no hay celdas en el heap)."""
+        return len(self.cells_heap) == 0
     
     def __lt__(self, other):
-        """Para PriorityQueue: menor cota = mayor prioridad"""
-        if self.cota_inferior != other.cota_inferior:
-            return self.cota_inferior < other.cota_inferior
-        if self.fila != other.fila:
-            return self.fila < other.fila
-        return self.columna < other.columna
-    
-    def __str__(self):
-        return f"Nodo(fila={self.fila}, col={self.columna}, cota inferior={self.cota_inferior}, opciones={len(self.valores_posibles)})"
+        """Comparador para ordenar los nodos en la cola de prioridad.
+        
+        Ordena primero por cota inferior, luego por cota superior,
+        y finalmente por profundidad (mayor profundidad primero).
+        """
+        if self.lower_bound != other.lower_bound:
+            return self.lower_bound < other.lower_bound
+        if self.upper_bound != other.upper_bound:
+            return self.upper_bound < other.upper_bound
+        return self.depth > other.depth
 
-# diccionario para contar la cantidad de veces que aparece cada valor en el tablero
-freq_values: dict[int, int] = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0}
 
-def is_complete(matrix: list[list[int]]) -> bool:
-    """verifica si el sudoku está completamente resuelto"""
-    for i in range(9):
-        for j in range(9):
-            if matrix[i][j] == 0:
-                return False
-    return True
-
-def generatePosibleValues(S: list[list[int]], row: int, col: int) -> Set[int]:
-    """dado fila, columna y cuadrante para una celda, genera los valores posibles utilizando conjuntos"""
-    # conjunto con los valores que hay en esa fila
-    v_fila: Set[int] = {S[row][col] for col in range(9) if S[row][col] != 0} 
-    # conjunto con los valores que hay en esa columna
-    v_col: Set[int] = {S[row][col] for row in range(9) if S[row][col] != 0} 
-    # conjunto con los valores que hay en ese cuadrante
-    v_cuadrante: Set[int] = {S[(row // 3) * 3 + i][(col // 3) * 3 + j] for i in range(3) for j in range(3) if S[(row // 3) * 3 + i][(col // 3) * 3 + j] != 0}
-
-    # conjunto con los valores posibles para esa celda
-    return {1, 2, 3, 4, 5, 6, 7, 8, 9} - v_fila - v_col - v_cuadrante
-
-# no se si usar este PriorityQueue o una lista de nodos, por ahora lo dejo como PriorityQueue
-def iniciarColaDePrioridad(S: list[list[int]]) -> PriorityQueue[NodoSudoku]:
+def branch_and_bound(matrix: list[list[int]]) -> Optional[list[list[int]]]:
     """
-    se almacena la cota, la celda y los valores posibles en el nodo
-    """
-    cola: PriorityQueue[NodoSudoku] = PriorityQueue()
-    for i in range(9):
-        for j in range(9):
-            if S[i][j] == 0:
-                cota = calcularCotaInferior(S, i, j)
-                # cota, celda y valores posibles
-                nodo = NodoSudoku(i, j, generatePosibleValues(S, i, j), cota, S)
-                # cola.put((cota, nodo))
-                cola.put(nodo)
-            # si el valor no es 0, se agrega a la frecuencia de valores
-            else:
-                freq_values[S[i][j]] += 1
-
-    return cola
-
-def generarHijos(nodo: NodoSudoku) -> list[NodoSudoku]:
-    """genera los hijos del nodo"""
-    hijos: list[NodoSudoku] = []
-    for valor in nodo.valores_posibles:
-        hijos.append(NodoSudoku(nodo.fila, nodo.columna, {valor}, nodo.cota_inferior, nodo.tablero))
-    return hijos
-
-def calcularCotaInferior(S: list[list[int]], row: int, col: int) -> int:
-    """cota inferior: cantidad de opciones disponibles por nodo a poner"""
-    # conjunto con los valores que hay en esa fila
-    v_fila: Set[int] = {S[row][col] for col in range(9) if S[row][col] != 0} 
-    # conjunto con los valores que hay en esa columna
-    v_col: Set[int] = {S[row][col] for row in range(9) if S[row][col] != 0} 
-    # conjunto con los valores que hay en ese cuadrante
-    v_cuadrante: Set[int] = {S[(row // 3) * 3 + i][(col // 3) * 3 + j] for i in range(3) for j in range(3) if S[(row // 3) * 3 + i][(col // 3) * 3 + j] != 0}
-
-    candidatos: Set[int] = {1, 2, 3, 4, 5, 6, 7, 8, 9} - v_fila - v_col - v_cuadrante
-
-    return len(candidatos) # cantidad de opciones disponibles para esa celda
-
-# Faltan podas por heuristica
-
-def podar(nodo: tuple[int, tuple[int, int, set[int]]]) -> bool:
-    """podar si no hay valores posibles para esa celda"""
-    if len(nodo.valores_posibles) == 0:
-        return True
-    return False
-
-def branchAndBound(S: list[list[int]]) -> list[list[int]]:
-    cola = iniciarColaDePrioridad(S)
-    nodo_raiz = NodoSudoku(0, 0, generatePosibleValues(S, 0, 0), calcularCotaInferior(S, 0, 0), S)
-    cola.put(nodo_raiz)
-    cota = calcularCotaInferior(S, 0, 0)
-    lim = 0 # mejor solucion parcial
+    Resuelve el Sudoku usando Branch and Bound con poda por cotas.
     
-    while not cola.empty():
-        nodo = cola.get() # saca un nodo de la cola de prioridad, el primero de la cola
-        print(f"Nodo: {nodo}")
-        if not podar(nodo):
-            if esSolucion(nodo):
-            print("Poda exitosa")
-        else:
-            print("Poda fallida")
-  
-    return None  # Ningún valor funcionó
+    MEJORA: Usa heap interno en cada nodo para MCV eficiente.
+    
+    Args:
+        matrix: Matriz 9x9 del sudoku con 0 en celdas vacías
+    
+    Returns:
+        Optional[list[list[int]]]: Matriz resuelta o None si no hay solución
+    """
+    priority_queue = []
+    counter = 0
+    
+    initial_node = SudokuNode(matrix, depth=0)
+    
+    if initial_node.lower_bound == float('inf'):
+        return None
+    
+    heapq.heappush(priority_queue, (initial_node.lower_bound, initial_node.upper_bound, counter, initial_node))
+    counter += 1
+    
+    limite = float('inf')
+    solution = None
+    
+    while priority_queue:
+        current_lb, current_ub, _, current_node = heapq.heappop(priority_queue) 
+        
+        # Poda explícita - cuando la cota inferior sea mayor o igual al límite actual
+        if current_node.lower_bound < limite:
+            
+            # ¿Solución encontrada?
+            if current_node.is_solved():
+                solution_ub = current_node.upper_bound
+                
+                if solution_ub < limite:
+                    limite = solution_ub
+                    solution = current_node.matrix
+            
+            else:  # NO está resuelto, seguir ramificando
+                # Extrae celda más restringida
+                result = current_node.get_most_constrained_cell()
+                
+                if result is not None:
+                    row, col, available_values = result
+                    
+                    # Generar hijos
+                    for value in sorted(available_values):
+                        increment()
+                        
+                        new_matrix = [r[:] for r in current_node.matrix]
+                        new_matrix[row][col] = value
+                        
+                        child_node = SudokuNode(new_matrix, depth=current_node.depth + 1)
+                        
+                        # Poda implícita
+                        if child_node.lower_bound < limite:
+                            heapq.heappush(priority_queue, 
+                                         (child_node.lower_bound, child_node.upper_bound, counter, child_node))
+                            counter += 1
 
-
-def checkCuadrante(matrix: list[list[int]], v: int, row: int, col: int) -> bool:
-    cuadrante_row = (row // 3) * 3
-    cuadrante_col = (col // 3) * 3
-
-    cuadrante: Set[int]
-
-    for i in range(3):
-        for j in range(3):
-            cuadrante.add(matrix[cuadrante_row + i][cuadrante_col + j])
-
-    return cuadrante
-
-# chequeo por columna
-def checkCol(matrix: list[list[int]], v: int, row: int, col: int) -> bool:
-    for i in range(9):
-        if i == row:
-            continue
-        if matrix[i][col] == v:
-            return False
-    return True
-
-# chequeo por fila
-def checkRow(matrix: list[list[int]], v: int, row: int, col: int) -> bool:
-    for i in range(9):
-        if i == col:
-            continue
-        if matrix[row][i] == v:
-            return False
-    return True
-
-# test para ejecutar el branch and bound con la matriz de prueba
-branchAndBound(sudoku_prueba)
-print(freq_values)
+    return solution
