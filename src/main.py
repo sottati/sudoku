@@ -49,7 +49,14 @@ def main():
             algorithm_map = {0: "backtracking", 1: "bnb", 2: "both"}
             algorithm = algorithm_map[algoritmo_idx]
 
-            modo_automatico(difficulty, algorithm)
+            # Seleccionar si mostrar animación
+            clear_screen()
+            opciones_animacion = ["Con animación", "Sin animación (métricas reales)"]
+            animacion_idx = menu("=== VISUALIZACIÓN ===", opciones_animacion)
+
+            enable_animation = (animacion_idx == 0)
+
+            modo_automatico(difficulty, algorithm, enable_animation)
 
 
 if __name__ == "__main__":

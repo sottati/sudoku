@@ -151,7 +151,7 @@ def print_sudoku(matrix: list[list[int]],
     print("  ╚═══════╧═══════╧═══════╝")
 
     if cursor is not None:
-        print(f"\n  Posición: ({cursor[0]+1}, {cursor[1]+1})")
+        print(f"\n  Posición: ({cursor[0]+1}, {cursor[1]+1})", end="", flush=True)
 
     if show_instructions:
         print("\n  ⌨  Flechas: navegar | 1-9: ingresar | 0: borrar | s: submit | q: salir")

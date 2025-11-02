@@ -137,70 +137,74 @@ class SudokuNode:
         return self.depth > other.depth
 
 
-def branch_and_bound(matrix: list[list[int]]) -> Optional[list[list[int]]]:
+def branch_and_bound(matrix: list[list[int]], visualizer = None) -> Optional[list[list[int]]]:
     """
     Resuelve el Sudoku usando Branch and Bound con poda por cotas.
-    
+
     MEJORA: Usa heap interno en cada nodo para MCV eficiente.
-    
+
     Args:
         matrix: Matriz 9x9 del sudoku con 0 en celdas vacías
-    
+        visualizer: Opcional - SudokuVisualizer para animación
+
     Returns:
         Optional[list[list[int]]]: Matriz resuelta o None si no hay solución
     """
     priority_queue = []
     counter = 0
-    
+
     initial_node = SudokuNode(matrix, depth=0)
-    
+
     if initial_node.lower_bound == float('inf'):
         return None
-    
+
     heapq.heappush(priority_queue, (initial_node.lower_bound, initial_node.upper_bound, counter, initial_node))
     counter += 1
-    
+
     upper_bound_global = float('inf')
     best_solution = None
-    
+
     while priority_queue:
         current_lb, current_ub, _, current_node = heapq.heappop(priority_queue)
-        
+
         # Poda explícita (el "continue" salta a la proxima iteración, descartando el nodo)
         if current_node.lower_bound >= upper_bound_global:
             continue
-        
+
         # ¿Solución encontrada?
         if current_node.is_solved():
             solution_ub = current_node.upper_bound
-            
+
             if solution_ub < upper_bound_global:
                 upper_bound_global = solution_ub
                 best_solution = current_node.matrix
-            
+
             continue
-        
+
         # MEJORA: Extraer celda más restringida del heap O(log n)
         result = current_node.get_most_constrained_cell()
-        
+
         if result is None:
             continue
-        
+
         row, col, available_values = result
-        
+
         # Generar hijos
         for value in sorted(available_values):
             increment()
-            
+
             new_matrix = [r[:] for r in current_node.matrix]
             new_matrix[row][col] = value
-            
+
+            if visualizer:
+                visualizer.update(new_matrix, row, col, value)
+
             child_node = SudokuNode(new_matrix, depth=current_node.depth + 1)
-            
+
             # Poda implícita
             if child_node.lower_bound < upper_bound_global:
-                heapq.heappush(priority_queue, 
+                heapq.heappush(priority_queue,
                              (child_node.lower_bound, child_node.upper_bound, counter, child_node))
                 counter += 1
-    
+
     return best_solution
