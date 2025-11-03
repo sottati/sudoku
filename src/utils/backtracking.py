@@ -1,30 +1,34 @@
+from typing import Optional
 from utils.utils import generateValues, initialize_matrix, isFactible, populate_matrix
 from utils.counter import increment
 
-# Algoritmo Backtracking como en la diapo
-def backtracking(S: list[list[int]], E = 0) -> list[list[int]]:
-    if E == 81:
-        return S
-    row, col = E // 9, E % 9
+# Algoritmo Backtracking: resuelve el sudoku llenando celdas válidas y retrocediendo cuando es necesario
+def backtracking(board: list[list[int]], cell_index: int = 0) -> Optional[list[list[int]]]:
+    # Caso base: recorrimos todas las celdas
+    if cell_index == 81:
+        return board
 
-    # Saltar los numeros ya llenados (diagonal al crear y numeros ya dados en el q hay q resolver)
-    if S[row][col] != 0:
-        return backtracking(S, E + 1)
+    row, col = divmod(cell_index, 9)
 
-    values = generateValues()
-    for v in values:
-        S[row][col] = v
+    # Saltar celdas ya completadas (diagonal inicial y pistas del puzzle)
+    if board[row][col] != 0:
+        return backtracking(board, cell_index + 1)
+
+    candidates = generateValues()
+    for value in candidates:
+        board[row][col] = value
         increment('backtracking')
-        if isFactible(S, v, row, col):
-            resultado = backtracking(S, E + 1)
-            if resultado is not None:  # verifica q el resultado no sea None, si es None, no se devuelve nada
-                return resultado
-        S[row][col] = 0
-    return None  # Ningún valor funcionó
+        if isFactible(board, value, row, col):
+            result = backtracking(board, cell_index + 1)
+            if result is not None:  # Se encontró una solución válida aguas abajo
+                return result
+        # Retroceder si no funcionó
+        board[row][col] = 0
+    return None  # Ningún candidato funcionó en esta celda
 
-# sudoku resuelto a partir de la diagonal aleatoria
-def iniciateBaseMatrix():
+# Genera un sudoku resuelto a partir de la diagonal aleatoria
+def iniciateBaseMatrix() -> list[list[int]]:
     base_matrix = initialize_matrix()
     base_matrix = populate_matrix(base_matrix)
-    base_matrix = backtracking(base_matrix)
-    return base_matrix
+    base_matrix = backtracking(base_matrix)  # type: ignore[assignment]
+    return base_matrix  # type: ignore[return-value]
