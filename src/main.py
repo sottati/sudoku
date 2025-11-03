@@ -276,6 +276,9 @@ class SudokuGUI(tk.Tk):
         if isFactible(matrix, value, row, col):
             # Válido en el contexto actual: sin pistas, sólo normalizar color
             e.configure(fg="#000000")
+            
+            # Verificar si el sudoku está completo
+            self._check_completion(matrix)
         else:
             # Mostrar en rojo brevemente y borrar automáticamente
             e.configure(fg="#b00020")
@@ -294,6 +297,42 @@ class SudokuGUI(tk.Tk):
             after_id = self.after(500, clear_if_unchanged)
             self.pending_clear[key] = after_id
 
+    def _check_completion(self, matrix: list[list[int]]):
+        """Verifica si el Sudoku está completado correctamente"""
+        # 1. Verificar que no haya celdas vacías
+        for r in range(9):
+            for c in range(9):
+                if matrix[r][c] == 0:
+                    return  # Aún hay celdas vacías
+        
+        # 2. Verificar que todas las celdas sean válidas
+        for r in range(9):
+            for c in range(9):
+                value = matrix[r][c]
+                if not isFactible(matrix, value, r, c):
+                    return  # Hay errores
+        
+        # 3. ¡Sudoku completado correctamente!
+        self._show_victory()
+    
+    def _show_victory(self):
+        """Muestra mensaje de victoria y deshabilita el tablero"""
+        # Deshabilitar todas las celdas editables
+        for r in range(9):
+            for c in range(9):
+                if self.fixed and not self.fixed[r][c]:
+                    self.entries[r][c].configure(state="disabled", disabledforeground="#006400")
+        
+        # Actualizar mensaje
+        self.label_info.config(
+            text=f"¡Felicitaciones! Completaste el Sudoku ({self.difficulty})",
+            fg="#006400",
+            font=self.font_subtitle
+        )
+        
+        # Opcional: Mostrar diálogo
+        import tkinter.messagebox as mb
+        mb.showinfo("¡Victoria!", "¡Felicitaciones! Has completado el Sudoku correctamente.")
 
 def gui_main():
     app = SudokuGUI()
