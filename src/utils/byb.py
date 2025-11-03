@@ -1,10 +1,4 @@
 """
-Implementación de Branch and Bound para resolver Sudoku
-Autor: santiago-garbini
-Fecha: 2025-11-01
-
-Branch and Bound con cola de prioridad INTERNA de celdas vacías.
-
 Heurística: Most Constrained Variable (MCV) implementada con heap
 Cota Inferior: Mínimo de opciones disponibles en cualquier celda vacía
 Cota Superior: Máximo de opciones disponibles en cualquier celda vacía
@@ -139,8 +133,6 @@ class SudokuNode:
 def branch_and_bound(matrix: list[list[int]]) -> Optional[list[list[int]]]:
     """
     Resuelve el Sudoku usando Branch and Bound con poda por cotas.
-    
-    MEJORA: Usa heap interno en cada nodo para MCV eficiente.
     
     Args:
         matrix: Matriz 9x9 del sudoku con 0 en celdas vacías

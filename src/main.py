@@ -1,7 +1,7 @@
 """
 Interfaz gráfica de Sudoku con selección de dificultad y modo (jugar o auto-resolver).
 
-Reglas de juego (sin pistas):
+Reglas de juego:
 - No se marcan aciertos/errores.
 - Sólo se permiten valores 1-9 válidos según el estado actual (fila/columna/cuadrante).
 - Las celdas fijas no se pueden editar.

@@ -30,5 +30,5 @@ def backtracking(board: list[list[int]], cell_index: int = 0) -> Optional[list[l
 def iniciateBaseMatrix() -> list[list[int]]:
     base_matrix = initialize_matrix()
     base_matrix = populate_matrix(base_matrix)
-    base_matrix = backtracking(base_matrix)  # type: ignore[assignment]
-    return base_matrix  # type: ignore[return-value]
+    base_matrix = backtracking(base_matrix)
+    return base_matrix 
