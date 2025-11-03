@@ -162,9 +162,11 @@ def branch_and_bound(matrix: list[list[int]]) -> Optional[list[list[int]]]:
             
             # ¿Solución encontrada?
             if current_node.is_solved():
+                solution_ub = current_node.upper_bound
                 
-                solution = current_node.matrix
-                return solution  # Sudoku resuelto, retornar inmediatamente
+                if solution_ub < limite:
+                    limite = solution_ub
+                    solution = current_node.matrix
             
             else:  # NO está resuelto, seguir ramificando
                 # Extrae celda más restringida
